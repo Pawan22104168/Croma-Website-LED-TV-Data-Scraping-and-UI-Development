@@ -210,7 +210,9 @@ async function fetchProducts() {
         console.error('Products load failed:', err);
         productGrid.innerHTML = `
             <div class="loader" style="color:var(--red)">
-                Could not connect to the API. Make sure Flask is running on port 5000.
+                <div style="font-size:3rem;margin-bottom:1rem">&#9888;</div>
+                <h3 style="color:var(--text)">Service Temporarily Unavailable</h3>
+                <p style="color:var(--muted);margin-top:0.5rem">Our Pricing Intelligence engine is currently undergoing maintenance or is unreachable. Please refresh or try again later.</p>
             </div>`;
     }
 }
