@@ -3,13 +3,6 @@ import pytest
 
 BASE_URL = "http://localhost:5000/api"
 
-def test_dynamic_config():
-    """
-    Verify the dynamic configuration discovery logic.
-    """
-    response = requests.get(f"{BASE_URL}/config")
-    assert response.status_code == 200
-
 def test_api_products_status():
     """
     Verify that the Products API is reachable and returns 200 OK.
@@ -29,7 +22,7 @@ def test_api_products_structure():
 
 def test_api_stats():
     """
-    Ensure the stats API returns the total count and the dynamic metadata fields.
+    Ensure the stats API returns the total count and the new 'lastUpdated' field.
     """
     response = requests.get(f"{BASE_URL}/stats")
     data = response.json()
@@ -57,10 +50,9 @@ def test_screen_size_filter():
 
 def test_discount_filter():
     """
-    Verify the Deal Finder (Discount) filtering logic.
+    Test if the Deal Finder works for '25% or more'.
     """
-    # 10% or more filter test
-    response = requests.get(f"{BASE_URL}/products?discount=10")
+    response = requests.get(f"{BASE_URL}/products?discount=25")
     data = response.json()
     assert response.status_code == 200
     

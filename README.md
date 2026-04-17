@@ -70,10 +70,13 @@ Simply open `frontend/index.html` in your web browser.
 
 This project is built to handle high-traffic and large-scale datasets using industry-standard techniques:
 
-*   **Database Indexing:** We use **Compound Text Indexes** in MongoDB. This ensures that keyword searches across 400+ (or 1M+) products remain $O(1)$ or $O(\log N)$ instead of $O(N)$.
-*   **Server-Side Pagination:** The API never sends the whole database to the UI. It sends data in small, manageable "pages" (20 items), reducing memory load.
-*   **Decoupled Architecture:** Each layer (Scraper, DB, API, UI) is independent. You can scale the scraper to run on multiple workers without impacting UI performance.
-*   **UI Debouncing:** Search and Price inputs use **Debounce Logic** (600ms), ensuring the backend is not overwhelmed by rapid keystrokes.
-*   **Type Optimization:** Prices and Ratings are converted to numerical types during import to allow for extremely fast sorting and mathematical range queries at the database level.
+*   **Concurrent Async Scraping:** The scraper uses `asyncio.Semaphore` and `asyncio.gather` to fetch multiple pages simultaneously. This provides an **N× speedup** (e.g., 5 simultaneous workers), reducing multi-hour scraping tasks to minutes.
+*   **Bulk Upsert Strategy:** Instead of destructive "Delete/Insert" cycles, the ingestion engine uses MongoDB `Upsert` logic. This preserves data integrity, updates existing prices/ratings, and only inserts new records—critical for real-time pricing intelligence.
+*   **Database Indexing:** We use **Compound Text Indexes** in MongoDB. This ensures keyword searches remain extremely fast even as the dataset grows to millions of records.
+*   **Server-Side Pagination:** The API utilizes server-side pagination (20 items per page), ensuring the UI remains responsive and lightweight regardless of the total database size.
+*   **Decoupled Architecture:** Each layer (Scraper, API, UI) is independent. You can scale the ingestion worker count without impacting the frontend or backend performance.
+
+---
+
 **Pawan**  
 *Placement Project for Sciative Solutions - April 2026*
