@@ -70,6 +70,13 @@ def migrate():
         print("[UPLOAD] Uploading clean data...")
         collection.insert_many(enriched_products)
 
+        print("[INDEX] Building Intelligence Search Index...")
+        # Create a text index on Name and Brand for the Search bar to work
+        collection.create_index([
+            ("name", "text"),
+            ("brand", "text")
+        ], name="CromaSearchIndex")
+
         # 4. Save Metadata (Last Updated)
         db["metadata"].delete_many({})
         db["metadata"].insert_one({
