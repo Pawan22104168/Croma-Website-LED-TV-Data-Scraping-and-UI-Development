@@ -173,6 +173,11 @@ async function fetchProducts() {
                         <strong>Not Found:</strong> No results for "${currentFilters.search}".
                         Try a broader search or remove some filters.
                     </div>`;
+            } else if (searchInfo.isFuzzyMatch) {
+                searchStatus.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>Intelligent Match:</strong> Handling partial or typo search for "${currentFilters.search}".
+                    </div>`;
             } else if (!searchInfo.isExactMatch) {
                 searchStatus.innerHTML = `
                     <div class="alert alert-info">

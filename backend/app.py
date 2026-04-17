@@ -38,19 +38,28 @@ def get_products():
     mongo_filter = {}
     is_exact_match = True
     
-    # Keyword Search
+    # Keyword Search Intelligence
+    is_fuzzy_match = False
     if search_query:
-        # Step A: Check if this is an "Exact Match" using a double-pass technique
-        # We try searching for the exact phrase first
+        # Pass 1: Try Exact Phrase Text Search (High Precision)
         exact_phrase = f'"{search_query}"'
         if collection.count_documents({"$text": {"$search": exact_phrase}}) > 0:
-            # Exact phrase exists in the database
             mongo_filter["$text"] = {"$search": exact_phrase}
             is_exact_match = True
-        else:
-            # No exact match, fall back to broad relevance
+        # Pass 2: Try Broad Relevance Text Search (Standard)
+        elif collection.count_documents({"$text": {"$search": search_query}}) > 0:
             mongo_filter["$text"] = {"$search": search_query}
             is_exact_match = False
+        # Pass 3: Intelligent Fallback (Regex Substring/Partial Match)
+        else:
+            # This handles "Sa" -> "Samsung" or "Samsang" typo matches
+            regex_query = {"$regex": search_query, "$options": "i"}
+            mongo_filter["$or"] = [
+                {"name": regex_query},
+                {"brand": regex_query}
+            ]
+            is_exact_match = False
+            is_fuzzy_match = True
         
     # Brand Filter
     if brand_filter:
@@ -140,6 +149,7 @@ def get_products():
         "searchInfo": {
             "searchActive": bool(search_query),
             "isExactMatch": is_exact_match,
+            "isFuzzyMatch": is_fuzzy_match,
             "maxScore": max_score
         },
         "pagination": {
