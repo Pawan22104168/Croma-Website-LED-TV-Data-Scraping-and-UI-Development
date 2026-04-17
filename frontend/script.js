@@ -24,8 +24,10 @@ const dealSelect = document.getElementById('deal-select');
 const sortSelect = document.getElementById('sort-select');
 const minPriceInput = document.getElementById('min-price');
 const maxPriceInput = document.getElementById('max-price');
-const paginationContainer = document.getElementById('pagination-controls');
-const statsContainer = document.getElementById('total-stats');
+const searchStatus = document.getElementById('search-status');
+const totalStatsContainer = document.getElementById('total-stats');
+const resultsInfoContainer = document.getElementById('results-info');
+const paginationControls = document.getElementById('pagination-controls');
 
 /**
  * Initialize application
@@ -95,8 +97,51 @@ async function fetchProducts() {
     try {
         const response = await fetch(`${API_BASE_URL}/products?${params}`);
         const data = await response.json();
+        const products = data.products;
+        const searchInfo = data.searchInfo;
+
+        // --- Handle Intelligent Search Feedback ---
+        if (searchInfo && searchInfo.searchActive) {
+            if (products.length === 0) {
+                searchStatus.innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>Product Not Found:</strong> We couldn't find an exact match for "${currentFilters.search}".
+                        <br>Searching for similar products...
+                    </div>`;
+                // If zero results, try clear broad search automatically 
+                // (or just let the user see the zero results state)
+            } else if (!searchInfo.isExactMatch) {
+                searchStatus.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>Relevant Selections:</strong> Exact model not found. Showing the most relevant matches for your query.
+                    </div>`;
+            } else {
+                searchStatus.innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>High-Precision Match:</strong> Results optimized for "${currentFilters.search}".
+                    </div>`;
+            }
+        } else {
+            searchStatus.innerHTML = ''; // Clear if no search
+        }
+
+        if (products.length === 0) {
+            productGrid.innerHTML = `
+                <div class="loader" style="padding-top: 5rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">😢</div>
+                    <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">No Products Available</h3>
+                    <p style="color: var(--text-muted);">We couldn't find any TVs matching this specific price range or brand.</p>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">Try clearing filters or broadening your budget.</p>
+                </div>
+            `;
+        } else {
+            renderProducts(products);
+        }
         
-        renderProducts(data.products);
+        // Update results info text
+        const totalFound = data.pagination.totalResults;
+        resultsInfoContainer.textContent = `Found ${totalFound} matching results for your selection`;
+        
         renderPagination(data.pagination);
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -186,7 +231,7 @@ async function fetchStats() {
     try {
         const response = await fetch(`${API_BASE_URL}/stats`);
         const stats = await response.json();
-        statsContainer.textContent = `Showing ${stats.totalProducts} LED TVs available`;
+        totalStatsContainer.textContent = `Monitoring ${stats.totalProducts} Premium Models`;
         
         // Update Footer with Data Freshness Timestamp
         const footerText = document.querySelector('.footer-content p');
@@ -209,7 +254,7 @@ async function fetchStats() {
  */
 function renderPagination(pagination) {
     const { totalPages, currentPage: activePage } = pagination;
-    paginationContainer.innerHTML = '';
+    paginationControls.innerHTML = '';
 
     if (totalPages <= 1) return;
 
@@ -219,7 +264,7 @@ function renderPagination(pagination) {
     prevBtn.textContent = '←';
     prevBtn.disabled = activePage === 1;
     prevBtn.onclick = () => { currentPage--; fetchProducts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
-    paginationContainer.appendChild(prevBtn);
+    paginationControls.appendChild(prevBtn);
 
     // Page Numbers (limited to 5 for brevity)
     let start = Math.max(1, activePage - 2);
@@ -231,7 +276,7 @@ function renderPagination(pagination) {
         btn.className = `page-btn ${i === activePage ? 'active' : ''}`;
         btn.textContent = i;
         btn.onclick = () => { currentPage = i; fetchProducts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
-        paginationContainer.appendChild(btn);
+        paginationControls.appendChild(btn);
     }
 
     // Next Button
@@ -240,7 +285,7 @@ function renderPagination(pagination) {
     nextBtn.textContent = '→';
     nextBtn.disabled = activePage === totalPages;
     nextBtn.onclick = () => { currentPage++; fetchProducts(); window.scrollTo({top: 0, behavior: 'smooth'}); };
-    paginationContainer.appendChild(nextBtn);
+    paginationControls.appendChild(nextBtn);
 }
 
 /**
@@ -284,11 +329,6 @@ function setupEventListeners() {
 
     // Screen Size Changes
     sizeSelect.onchange = (e) => {
-        if (e.target.value !== "") {
-            // When filtering by size, clear search to avoid conflicts
-            searchInput.value = "";
-            currentFilters.search = "";
-        }
         currentFilters.screen_size = e.target.value;
         currentPage = 1;
         fetchProducts();
@@ -296,11 +336,6 @@ function setupEventListeners() {
 
     // Deal Finder Changes
     dealSelect.onchange = (e) => {
-        if (e.target.value !== "") {
-            // Clear search to focus on deals
-            searchInput.value = "";
-            currentFilters.search = "";
-        }
         currentFilters.discount = e.target.value;
         currentPage = 1;
         fetchProducts();
@@ -327,7 +362,7 @@ function setupEventListeners() {
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">Please adjust your budget to see matching TVs.</p>
                 </div>
             `;
-            paginationContainer.innerHTML = '';
+            paginationControls.innerHTML = '';
             return; // Skip API call
         }
 

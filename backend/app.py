@@ -35,10 +35,21 @@ def get_products():
 
     # --- 2. Build MongoDB Filter Object ---
     mongo_filter = {}
+    is_exact_match = True
     
-    # Keyword Search (uses the Text Index we created)
+    # Keyword Search
     if search_query:
-        mongo_filter["$text"] = {"$search": search_query}
+        # Step A: Check if this is an "Exact Match" using a double-pass technique
+        # We try searching for the exact phrase first
+        exact_phrase = f'"{search_query}"'
+        if collection.count_documents({"$text": {"$search": exact_phrase}}) > 0:
+            # Exact phrase exists in the database
+            mongo_filter["$text"] = {"$search": exact_phrase}
+            is_exact_match = True
+        else:
+            # No exact match, fall back to broad relevance
+            mongo_filter["$text"] = {"$search": search_query}
+            is_exact_match = False
         
     # Brand Filter
     if brand_filter:
@@ -76,12 +87,20 @@ def get_products():
             mongo_filter["price_num"]["$lte"] = float(max_price)
 
     # --- 3. Determine Sort Logic ---
-    # catalog_rank: 1 (default)
-    # price_asc: 1
-    # price_desc: -1
-    # rating_desc: -1
-    sort_logic = [("catalog_rank", 1)] # Default
+    # Default to catalog rank
+    sort_logic = [("catalog_rank", 1)]
     
+    score_projection = None
+    if search_query:
+        # We project the text score to determine how 'exact' the match is
+        score_projection = {"score": {"$meta": "textScore"}}
+        if sort_by == "catalog_rank": # If user is on default, use relevance
+            sort_logic = [("score", {"$meta": "textScore"})]
+        else:
+            # If user picked a sort (like price), use that but keep score as secondary
+            sort_logic = [(sort_logic[0][0], sort_logic[0][1]), ("score", {"$meta": "textScore"})]
+            
+    # Existing Sort Logic (Overriding default if needed)
     if sort_by == "price_asc":
         sort_logic = [("price_num", 1)]
     elif sort_by == "price_desc":
@@ -98,16 +117,28 @@ def get_products():
     skip = (page - 1) * limit
     
     # Fetch data
-    cursor = collection.find(mongo_filter).sort(sort_logic).skip(skip).limit(limit)
+    if score_projection:
+        cursor = collection.find(mongo_filter, score_projection).sort(sort_logic).skip(skip).limit(limit)
+    else:
+        cursor = collection.find(mongo_filter).sort(sort_logic).skip(skip).limit(limit)
     
     products = []
+    max_score = 0
     for doc in cursor:
-        doc["_id"] = str(doc["_id"]) # Convert ObjectId to string for JSON
+        doc["_id"] = str(doc["_id"])
+        current_score = doc.get("score", 0)
+        if current_score > max_score:
+            max_score = current_score
         products.append(doc)
 
     # --- 5. Return JSON Response ---
     return jsonify({
         "products": products,
+        "searchInfo": {
+            "searchActive": bool(search_query),
+            "isExactMatch": is_exact_match,
+            "maxScore": max_score
+        },
         "pagination": {
             "totalResults": total_count,
             "totalPages": total_pages,
@@ -158,7 +189,6 @@ def get_config():
             "deals": deals
         })
     except Exception as e:
-        print(f"Config API Error: {e}")
         return jsonify({"screenSizes": [], "deals": []})
 
 @app.route("/api/stats", methods=["GET"])
