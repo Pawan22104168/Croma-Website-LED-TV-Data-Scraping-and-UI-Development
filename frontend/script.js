@@ -233,7 +233,7 @@ function renderProducts(products) {
             <div class="card-glow"></div>
             <div class="product-image-container">
                 <a href="${url}" target="_blank" rel="noopener">
-                    <img src="${img}" alt="${product.name}" loading="lazy">
+                    <img src="${img}" alt="${product.name}" loading="lazy" onload="this.classList.add('loaded')">
                 </a>
                 ${discount ? `<div class="discount-badge">${discount}</div>` : ''}
             </div>
@@ -486,6 +486,15 @@ function setupEventListeners() {
             searchInput.focus();
         }
     });
+
+    // CRITICAL FIX: Prevent mouse wheel from changing price values (The "Drifting Numbers" bug)
+    const blockWheel = (e) => {
+        if (document.activeElement === e.target) {
+            e.preventDefault();
+        }
+    };
+    minPriceInput.addEventListener('wheel', blockWheel, { passive: false });
+    maxPriceInput.addEventListener('wheel', blockWheel, { passive: false });
 }
 
 // ============================================================

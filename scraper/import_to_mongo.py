@@ -2,6 +2,7 @@ import json
 import re
 import time
 from datetime import datetime
+import os
 from pymongo import MongoClient, UpdateOne, TEXT
 
 
@@ -85,8 +86,9 @@ def import_products():
     print("  Croma DB Importer  |  Upsert Mode")
     print("=" * 55)
 
-    # Connect to MongoDB
-    client = MongoClient("mongodb://localhost:27017/")
+    # Connect to MongoDB — uses Atlas Cloud URI for true dynamics
+    atlas_uri = "mongodb+srv://pawanwalke6_db_user:nzJ15wIc0sYfliJn@croma-cluster.qw3iudf.mongodb.net/?appName=croma-cluster"
+    client = MongoClient(atlas_uri)
     db = client["croma_db"]
     collection = db["products"]
 
