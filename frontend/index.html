@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Croma LED TV Explorer</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <span class="logo-accent">Croma</span> TV Explorer
+            </div>
+            <div class="stats" id="total-stats">
+                Loading products...
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Search and Filter Bar -->
+        <section class="controls-section">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search by brand, name, or keywords (e.g. Samsung 55 inch)...">
+                <button id="search-button">Search</button>
+            </div>
+            
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="sort-select">Sort By</label>
+                    <select id="sort-select">
+                        <option value="catalog_rank">Catalog Ranking</option>
+                        <option value="price_asc">Price: Lowest First</option>
+                        <option value="price_desc">Price: Highest First</option>
+                        <option value="rating_desc">Top Rated</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="brand-select">Brand</label>
+                    <select id="brand-select">
+                        <option value="">All Brands</option>
+                        <!-- Dynamic Brands -->
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Price Range (₹)</label>
+                    <div class="price-inputs">
+                        <input type="number" id="min-price" placeholder="Min">
+                        <input type="number" id="max-price" placeholder="Max">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Grid -->
+        <section class="results-section">
+            <div id="product-grid" class="product-grid">
+                <!-- Cards will be injected here -->
+                <div class="loader">Fetching the latest TVs from the database...</div>
+            </div>
+        </section>
+
+        <!-- Pagination -->
+        <section class="pagination-section" id="pagination-controls">
+            <!-- Pagination buttons will be injected here -->
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-content">
+            <p>&copy; 2026 Croma LED TV Data Scraping Project | Built for Sciative Solutions</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
