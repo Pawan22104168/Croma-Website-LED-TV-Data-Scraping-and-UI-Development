@@ -3,33 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse and compare 400+ LED TVs scraped live from Croma. Filter by brand, screen size, price and discount to find the best deal.">
     <title>Croma LED TV Explorer</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts: Inter -->
+    <link rel="stylesheet" href="style.css?v=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+
     <header>
         <div class="container header-content">
             <div class="logo">
                 <span class="logo-accent">Croma</span> TV Explorer
             </div>
-            <div id="total-stats" class="total-stats-pill">
-                Monitoring 0 Models
-            </div>
+            <div id="total-stats" class="total-stats-pill">Monitoring 0 Models</div>
         </div>
     </header>
 
     <main class="container">
-        <!-- Search and Filter Bar -->
+
+        <!-- Market Intelligence Dashboard -->
+        <section class="insight-section" id="insight-dashboard">
+            <div class="bento-grid">
+                <div class="bento-card main-insight">
+                    <div class="card-glow"></div>
+                    <p class="card-label">Market Leader</p>
+                    <h2 id="insight-top-brand">...</h2>
+                    <p class="card-detail">Dominating by share &amp; volume</p>
+                </div>
+                <div class="bento-card stats-insight">
+                    <div class="card-glow"></div>
+                    <p class="card-label">Average Market Price</p>
+                    <div class="insight-val">&#8377;<span id="insight-avg-price">0</span></div>
+                    <p class="card-detail">Live catalog benchmark</p>
+                </div>
+                <div class="bento-card deals-insight">
+                    <div class="card-glow"></div>
+                    <p class="card-label">Maximum Savings</p>
+                    <div class="insight-val"><span id="insight-max-savings">0</span>%</div>
+                    <p class="card-detail">Today's deepest price cut</p>
+                </div>
+                <div class="bento-card efficiency-insight">
+                    <div class="card-glow"></div>
+                    <p class="card-label">Avg. Discount</p>
+                    <div class="insight-val"><span id="insight-avg-savings">0</span>%</div>
+                    <p class="card-detail">Yield across all models</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search and Filter Controls -->
         <section class="controls-section">
             <div class="search-container">
-                <input type="text" id="search-input" placeholder="Search by brand, name, or keywords (e.g. Samsung 55 inch)...">
+                <div class="search-input-wrap">
+                    <input type="text" id="search-input" placeholder="Search by brand, name, or model (e.g. Samsung 55 inch)...">
+                    <button id="search-clear" class="search-clear-btn" title="Clear search">&#x2715;</button>
+                </div>
                 <button id="search-button">Search</button>
             </div>
-            
+
             <div class="filters-grid">
                 <div class="filter-group">
                     <label for="sort-select">Sort By</label>
@@ -38,6 +71,7 @@
                         <option value="price_asc">Price: Lowest First</option>
                         <option value="price_desc">Price: Highest First</option>
                         <option value="rating_desc">Top Rated</option>
+                        <option value="discount_desc">Best Discount</option>
                     </select>
                 </div>
 
@@ -45,7 +79,6 @@
                     <label for="brand-select">Brand</label>
                     <select id="brand-select">
                         <option value="">All Brands</option>
-                        <!-- Dynamic Brands -->
                     </select>
                 </div>
 
@@ -53,7 +86,6 @@
                     <label for="size-select">Screen Size</label>
                     <select id="size-select">
                         <option value="">All Sizes</option>
-                        <!-- Dynamic Sizes -->
                     </select>
                 </div>
 
@@ -61,12 +93,11 @@
                     <label for="deal-select">Hot Deals</label>
                     <select id="deal-select">
                         <option value="">All Products</option>
-                        <!-- Dynamic Deals -->
                     </select>
                 </div>
 
                 <div class="filter-group price-column-span">
-                    <label>Price Range (₹)</label>
+                    <label>Price Range (&#8377;)</label>
                     <div class="price-inputs">
                         <input type="number" id="min-price" placeholder="Min">
                         <input type="number" id="max-price" placeholder="Max">
@@ -75,20 +106,21 @@
             </div>
         </section>
 
-        <!-- Product Grid -->
+        <!-- Active filter tags — appear when any filter is selected -->
+        <div id="active-filters" class="active-filters"></div>
+
+        <!-- Product Results -->
         <section class="results-section">
             <div id="search-status" class="search-status"></div>
             <div id="results-info" class="results-info-text">Initializing results...</div>
             <div id="product-grid" class="product-grid">
-                <!-- Cards will be injected here -->
                 <div class="loader">Fetching the latest TVs from the database...</div>
             </div>
         </section>
 
         <!-- Pagination -->
-        <section class="pagination-section" id="pagination-controls">
-            <!-- Pagination buttons will be injected here -->
-        </section>
+        <section class="pagination-section" id="pagination-controls"></section>
+
     </main>
 
     <footer>
@@ -97,6 +129,9 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <!-- Floating scroll-to-top button, shown after scrolling down -->
+    <button id="scroll-top-btn" class="scroll-top-btn" title="Back to top">&#8679;</button>
+
+    <script src="script.js?v=1.0"></script>
 </body>
 </html>

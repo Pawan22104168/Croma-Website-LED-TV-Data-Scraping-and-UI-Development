@@ -2,14 +2,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 import math
-app = Flask(__name__, 
-            static_folder='../frontend', 
-            static_url_path='')
-# Enable CORS so our frontend can talk to this API
+import os
+
+# Serve static files (HTML/CSS/JS) from the frontend folder
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
-# 2. Connect to MongoDB
-client = MongoClient("mongodb://localhost:27017/")
+# Reads MONGO_URI from environment (set on Vercel). Falls back to localhost for local dev.
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+client = MongoClient(MONGO_URI)
 db = client["croma_db"]
 collection = db["products"]
 
@@ -100,13 +101,15 @@ def get_products():
             # If user picked a sort (like price), use that but keep score as secondary
             sort_logic = [(sort_logic[0][0], sort_logic[0][1]), ("score", {"$meta": "textScore"})]
             
-    # Existing Sort Logic (Overriding default if needed)
+    # Apply the user's chosen sort order
     if sort_by == "price_asc":
         sort_logic = [("price_num", 1)]
     elif sort_by == "price_desc":
         sort_logic = [("price_num", -1)]
     elif sort_by == "rating_desc":
         sort_logic = [("rating_num", -1)]
+    elif sort_by == "discount_desc":
+        sort_logic = [("discount_num", -1)]
     elif sort_by == "rank_asc":
         sort_logic = [("catalog_rank", 1)]
 
@@ -214,6 +217,48 @@ def get_stats():
         }
     }
     return jsonify(stats)
+
+@app.route("/api/analytics", methods=["GET"])
+def get_analytics():
+    """
+    Powerful data intelligence endpoint.
+    Calculates market trends, and brand leaders in real-time.
+    """
+    try:
+        # Pass 1: Global Market Snapshot
+        snapshot_pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "avg_price": {"$avg": "$price_num"},
+                    "max_discount": {"$max": "$discount_num"},
+                    "avg_discount": {"$avg": "$discount_num"}
+                }
+            }
+        ]
+        snapshot = list(collection.aggregate(snapshot_pipeline))[0]
+
+        # Pass 2: Brand Leaderboard (Top 3 by Volume)
+        brand_pipeline = [
+            {"$group": {"_id": "$brand", "count": {"$sum": 1}, "avg_price": {"$avg": "$price_num"}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 3}
+        ]
+        brand_leaders = list(collection.aggregate(brand_pipeline))
+
+        # Pass 3: Value Gems (Top 5 TVs with 4.5+ rating and high discount)
+        # We'll just return the best overall brand for visual simplicity
+        best_brand = brand_leaders[0]["_id"] if brand_leaders else "N/A"
+
+        return jsonify({
+            "avgPrice": round(snapshot["avg_price"]),
+            "maxSavings": round(snapshot["max_discount"]),
+            "avgDiscount": round(snapshot["avg_discount"]),
+            "topBrand": best_brand,
+            "leaders": brand_leaders
+        })
+    except Exception as e:
+        return jsonify({"avgPrice": 0, "maxSavings": 0, "topBrand": "N/A"})
 
 if __name__ == "__main__":
     # Run the Flask app on port 5000
