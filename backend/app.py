@@ -101,8 +101,9 @@ def get_products():
     sort_logic = [("catalog_rank", 1)]
     
     score_projection = None
-    if search_query:
+    if search_query and not is_fuzzy_match:
         # We project the text score to determine how 'exact' the match is
+        # NOTE: This only works with $text search, not Regex.
         score_projection = {"score": {"$meta": "textScore"}}
         if sort_by == "catalog_rank": # If user is on default, use relevance
             sort_logic = [("score", {"$meta": "textScore"})]
