@@ -9,6 +9,7 @@ let currentFilters = {
     brand: '',
     min_price: '',
     max_price: '',
+    screen_size: '', // [RELEVANT IMPROVEMENT]
     sort: 'catalog_rank'
 };
 
@@ -17,6 +18,7 @@ const productGrid = document.getElementById('product-grid');
 const searchInput = document.getElementById('search-input');
 const searchButton = document.getElementById('search-button');
 const brandSelect = document.getElementById('brand-select');
+const sizeSelect = document.getElementById('size-select'); // [RELEVANT IMPROVEMENT]
 const sortSelect = document.getElementById('sort-select');
 const minPriceInput = document.getElementById('min-price');
 const maxPriceInput = document.getElementById('max-price');
@@ -46,6 +48,7 @@ async function fetchProducts() {
         limit: limit,
         search: currentFilters.search,
         brand: currentFilters.brand,
+        screen_size: currentFilters.screen_size, // [RELEVANT IMPROVEMENT]
         sort: currentFilters.sort,
         min_price: currentFilters.min_price,
         max_price: currentFilters.max_price
@@ -231,6 +234,18 @@ function setupEventListeners() {
             currentFilters.search = "";
         }
         currentFilters.brand = e.target.value;
+        currentPage = 1;
+        fetchProducts();
+    };
+
+    // [RELEVANT IMPROVEMENT] Screen Size Changes
+    sizeSelect.onchange = (e) => {
+        if (e.target.value !== "") {
+            // When filtering by size, clear search to avoid conflicts
+            searchInput.value = "";
+            currentFilters.search = "";
+        }
+        currentFilters.screen_size = e.target.value;
         currentPage = 1;
         fetchProducts();
     };

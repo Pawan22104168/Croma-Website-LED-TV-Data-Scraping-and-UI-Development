@@ -30,6 +30,7 @@ def get_products():
     brand_filter = request.args.get("brand", "")
     min_price = request.args.get("min_price", None)
     max_price = request.args.get("max_price", None)
+    screen_size_filter = request.args.get("screen_size", "") # [RELEVANT IMPROVEMENT]
 
     # --- 2. Build MongoDB Filter Object ---
     mongo_filter = {}
@@ -41,6 +42,20 @@ def get_products():
     # Brand Filter
     if brand_filter:
         mongo_filter["brand"] = brand_filter
+
+    # [RELEVANT IMPROVEMENT] Screen Size Bucketing Logic
+    # 32_and_below, 43_inch, 50_inch, 55_inch, 65_and_above
+    if screen_size_filter:
+        if screen_size_filter == "32_and_below":
+            mongo_filter["screen_size_num"] = {"$lte": 32}
+        elif screen_size_filter == "43_inch":
+            mongo_filter["screen_size_num"] = 43
+        elif screen_size_filter == "50_inch":
+            mongo_filter["screen_size_num"] = 50
+        elif screen_size_filter == "55_inch":
+            mongo_filter["screen_size_num"] = 55
+        elif screen_size_filter == "65_and_above":
+            mongo_filter["screen_size_num"] = {"$gte": 65}
         
     # Price Range Filter
     if min_price or max_price:

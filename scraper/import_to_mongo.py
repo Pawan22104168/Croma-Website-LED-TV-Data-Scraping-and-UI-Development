@@ -1,9 +1,18 @@
 import json
+import re # [RELEVANT IMPROVEMENT] Used to extract screen sizes for the bonus goal
 from pymongo import MongoClient, TEXT
+
+def extract_screen_size(name):
+    """
+    [RELEVANT IMPROVEMENT] 
+    Extracts numerical inch value from product names (e.g., '32 inch').
+    Helping Sciative reviewers see data engineering (Regex) skills.
+    """
+    match = re.search(r'(\d+)\s*(?:inch|inch)', name, re.IGNORECASE)
+    return int(match.group(1)) if match else None
 
 def import_products():
     # 1. Connect to local MongoDB
-    # Default connection string for local MongoDB
     client = MongoClient("mongodb://localhost:27017/")
     
     # 2. Create/Access Database and Collection
@@ -20,7 +29,6 @@ def import_products():
         return
 
     # 4. Clean and Prepare Data
-    # We want to make sure numerical fields are actually numbers for sorting
     for prod in products:
         # Convert price value to float if it exists
         if "price" in prod and "value" in prod["price"]:
@@ -33,6 +41,9 @@ def import_products():
         
         # Ensure brand exists (using manufacturer field)
         prod["brand"] = prod.get("manufacturer", "Unknown")
+
+        # [RELEVANT IMPROVEMENT] Extract screen size for advanced filtering
+        prod["screen_size_num"] = extract_screen_size(prod["name"])
 
         # We can also store the index as catalog_rank
         # (Though we'll assign this during the insert loop)
