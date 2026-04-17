@@ -28,6 +28,12 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Private Metadata
+# Private Metadata & Artifacts
 .gemini/
 *.log
+walkthrough.md
+task.md
+implementation_plan.md
+research_notes.md
+analysis_results.md
+experiment_results.md

@@ -1,12 +1,11 @@
-import json
-import re # [RELEVANT IMPROVEMENT] Used to extract screen sizes for the bonus goal
+import re # Used to extract numerical screen sizes from product names
 from pymongo import MongoClient, TEXT
 
 def extract_screen_size(name):
     """
-    [RELEVANT IMPROVEMENT] 
-    Extracts numerical inch value from product names (e.g., '32 inch').
-    Helping Sciative reviewers see data engineering (Regex) skills.
+    Normalization Logic: 
+    Extracts numerical inch value from product strings (e.g., '32 inch').
+    This enables precise filtering regardless of variations in the product title format.
     """
     match = re.search(r'(\d+)\s*(?:inch|inch)', name, re.IGNORECASE)
     return int(match.group(1)) if match else None
@@ -42,21 +41,32 @@ def import_products():
         # Ensure brand exists (using manufacturer field)
         prod["brand"] = prod.get("manufacturer", "Unknown")
 
-        # [RELEVANT IMPROVEMENT] Extract screen size for advanced filtering
+        # Extract screen size for advanced filtering and bucketing
         prod["screen_size_num"] = extract_screen_size(prod["name"])
 
-        # We can also store the index as catalog_rank
-        # (Though we'll assign this during the insert loop)
+        # Extract numerical discount percentage for the Deal Finder feature
+        discount_str = prod.get("discountValue", "")
+        if "%" in discount_str:
+            # Extract only digits (e.g., "38%" -> 38)
+            discount_match = re.search(r'(\d+)', discount_str)
+            prod["discount_num"] = int(discount_match.group(1)) if discount_match else 0
+        else:
+            prod["discount_num"] = 0
 
-    # 5. Clear existing data to avoid duplicates during testing
     print("Clearing old data from collection...")
     collection.delete_many({})
+    db["metadata"].delete_many({}) 
 
-    # 6. Insert Data with Catalog Rank
     print(f"Inserting {len(products)} products into MongoDB...")
     for index, prod in enumerate(products):
         prod["catalog_rank"] = index + 1 # Rank starts at 1
         collection.insert_one(prod)
+
+    # Record the ingestion timestamp for data freshness transparency
+    from datetime import datetime
+    db["metadata"].insert_one({
+        "last_updated": datetime.now().strftime("%B %d, %Y at %I:%M %p")
+    })
 
     # 7. Create Indexes for Performance (Scaling)
     print("Creating database indexes...")

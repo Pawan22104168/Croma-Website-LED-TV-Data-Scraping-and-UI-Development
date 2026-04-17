@@ -30,7 +30,8 @@ def get_products():
     brand_filter = request.args.get("brand", "")
     min_price = request.args.get("min_price", None)
     max_price = request.args.get("max_price", None)
-    screen_size_filter = request.args.get("screen_size", "") # [RELEVANT IMPROVEMENT]
+    screen_size_filter = request.args.get("screen_size", "")
+    discount_filter = request.args.get("discount", "")
 
     # --- 2. Build MongoDB Filter Object ---
     mongo_filter = {}
@@ -43,8 +44,11 @@ def get_products():
     if brand_filter:
         mongo_filter["brand"] = brand_filter
 
-    # [RELEVANT IMPROVEMENT] Screen Size Bucketing Logic
-    # 32_and_below, 43_inch, 50_inch, 55_inch, 65_and_above
+    # Implement Discount Filter Logic
+    if discount_filter:
+        mongo_filter["discount_num"] = {"$gte": int(discount_filter)}
+
+    # Screen Size logic supporting both legacy buckets and dynamic exact matches
     if screen_size_filter:
         if screen_size_filter == "32_and_below":
             mongo_filter["screen_size_num"] = {"$lte": 32}
@@ -56,6 +60,12 @@ def get_products():
             mongo_filter["screen_size_num"] = 55
         elif screen_size_filter == "65_and_above":
             mongo_filter["screen_size_num"] = {"$gte": 65}
+        else:
+            # Handle dynamic exact numerical matches from the configuration-driven UI
+            try:
+                mongo_filter["screen_size_num"] = int(screen_size_filter)
+            except ValueError:
+                pass 
         
     # Price Range Filter
     if min_price or max_price:
@@ -112,10 +122,54 @@ def get_brands():
     brands = collection.distinct("brand")
     return jsonify(sorted(brands))
 
+@app.route("/api/config", methods=["GET"])
+def get_config():
+    """
+    Analyzes the database in real-time to generate dynamic filter categories.
+    This ensures the UI scales automatically as the catalog grows.
+    """
+    try:
+        # 1. Dynamically find every screen size in stock
+        # Removing None values and sorting from small to large
+        distinct_sizes = sorted([s for s in collection.distinct("screen_size_num") if s])
+        
+        screen_sizes = [{"label": "All Sizes", "value": ""}]
+        for size in distinct_sizes:
+            screen_sizes.append({
+                "label": f"{size} inch",
+                "value": str(size)
+            })
+
+        # 2. Dynamically determine discount thresholds
+        # If the highest discount in DB is 54%, we show 10, 25, 40 etc.
+        # If today only 5% exists, we can still show 5% as an option.
+        pipeline = [{"$group": {"_id": None, "max_d": {"$max": "$discount_num"}}}]
+        res = list(collection.aggregate(pipeline))
+        max_d = res[0]["max_d"] if res else 0
+
+        deals = [{"label": "All Products", "value": ""}]
+        # Offer standard industry milestones if they are relevant to the current data
+        for threshold in [5, 10, 25, 40, 50, 75]:
+            if max_d >= threshold:
+                deals.append({"label": f"{threshold}% Off or More", "value": str(threshold)})
+
+        return jsonify({
+            "screenSizes": screen_sizes,
+            "deals": deals
+        })
+    except Exception as e:
+        print(f"Config API Error: {e}")
+        return jsonify({"screenSizes": [], "deals": []})
+
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
     # Returns some summary stats for the UI
     total = collection.count_documents({})
+
+    # Fetch the Metadata for data freshness tracking
+    meta = db["metadata"].find_one()
+    last_updated = meta.get("last_updated", "Unknown") if meta else "Recent"
+
     # Get min and max price
     pipeline = [
         {"$group": {"_id": None, "min": {"$min": "$price_num"}, "max": {"$max": "$price_num"}}}
@@ -123,6 +177,7 @@ def get_stats():
     result = list(collection.aggregate(pipeline))
     stats = {
         "totalProducts": total,
+        "lastUpdated": last_updated,
         "priceRange": {
             "min": result[0]["min"] if result else 0,
             "max": result[0]["max"] if result else 0

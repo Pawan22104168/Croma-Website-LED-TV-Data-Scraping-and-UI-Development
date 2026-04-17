@@ -124,7 +124,7 @@ button:hover {
 
 .filters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 20px;
 }
 
@@ -140,15 +140,24 @@ button:hover {
     color: var(--text-muted);
 }
 
+.price-column-span {
+    grid-column: span 2;
+}
+
 .price-inputs {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
 }
 
 .price-inputs input {
-    width: 100%;
-    /* Hide spin buttons for a cleaner look */
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    text-align: center; /* Center the numbers for professional look */
+    font-size: 0.9rem;
+    /* Hide spin buttons */
     -moz-appearance: textfield;
 }
 

@@ -9,7 +9,8 @@ let currentFilters = {
     brand: '',
     min_price: '',
     max_price: '',
-    screen_size: '', // [RELEVANT IMPROVEMENT]
+    screen_size: '',
+    discount: '',
     sort: 'catalog_rank'
 };
 
@@ -18,7 +19,8 @@ const productGrid = document.getElementById('product-grid');
 const searchInput = document.getElementById('search-input');
 const searchButton = document.getElementById('search-button');
 const brandSelect = document.getElementById('brand-select');
-const sizeSelect = document.getElementById('size-select'); // [RELEVANT IMPROVEMENT]
+const sizeSelect = document.getElementById('size-select');
+const dealSelect = document.getElementById('deal-select');
 const sortSelect = document.getElementById('sort-select');
 const minPriceInput = document.getElementById('min-price');
 const maxPriceInput = document.getElementById('max-price');
@@ -30,10 +32,45 @@ const statsContainer = document.getElementById('total-stats');
  */
 async function init() {
     console.log('Frontend Initializing...');
+    await fetchConfig(); // Load dynamic UI configuration
     await fetchBrands();
     await fetchStats();
     await fetchProducts();
     setupEventListeners();
+}
+
+/**
+ * Fetch dynamic UI configuration settings from the API
+ */
+async function fetchConfig() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/config`);
+        const config = await response.json();
+        
+        // Populate Screen Size
+        if (config.screenSizes) {
+            sizeSelect.innerHTML = '';
+            config.screenSizes.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.label;
+                sizeSelect.appendChild(opt);
+            });
+        }
+        
+        // Populate Deals
+        if (config.deals) {
+            dealSelect.innerHTML = '';
+            config.deals.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.label;
+                dealSelect.appendChild(opt);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching config:', error);
+    }
 }
 
 /**
@@ -48,7 +85,8 @@ async function fetchProducts() {
         limit: limit,
         search: currentFilters.search,
         brand: currentFilters.brand,
-        screen_size: currentFilters.screen_size, // [RELEVANT IMPROVEMENT]
+        screen_size: currentFilters.screen_size,
+        discount: currentFilters.discount,
         sort: currentFilters.sort,
         min_price: currentFilters.min_price,
         max_price: currentFilters.max_price
@@ -150,6 +188,12 @@ async function fetchStats() {
         const stats = await response.json();
         statsContainer.textContent = `Showing ${stats.totalProducts} LED TVs available`;
         
+        // Update Footer with Data Freshness Timestamp
+        const footerText = document.querySelector('.footer-content p');
+        if (footerText && stats.lastUpdated) {
+            footerText.innerHTML = `&copy; 2026 Croma LED TV Data Scraping Project | <span style="color: var(--primary-color)">Last Updated: ${stats.lastUpdated}</span>`;
+        }
+        
         // Inject database min/max into placeholders
         if (stats.priceRange) {
             minPriceInput.placeholder = `From ${Math.floor(stats.priceRange.min).toLocaleString()}`;
@@ -238,7 +282,7 @@ function setupEventListeners() {
         fetchProducts();
     };
 
-    // [RELEVANT IMPROVEMENT] Screen Size Changes
+    // Screen Size Changes
     sizeSelect.onchange = (e) => {
         if (e.target.value !== "") {
             // When filtering by size, clear search to avoid conflicts
@@ -246,6 +290,18 @@ function setupEventListeners() {
             currentFilters.search = "";
         }
         currentFilters.screen_size = e.target.value;
+        currentPage = 1;
+        fetchProducts();
+    };
+
+    // Deal Finder Changes
+    dealSelect.onchange = (e) => {
+        if (e.target.value !== "") {
+            // Clear search to focus on deals
+            searchInput.value = "";
+            currentFilters.search = "";
+        }
+        currentFilters.discount = e.target.value;
         currentPage = 1;
         fetchProducts();
     };
